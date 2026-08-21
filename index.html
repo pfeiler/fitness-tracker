@@ -2,64 +2,285 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hello World | Fitness-Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Fitness-Tracker</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    :root {
+      --bg:#0f172a; --card:#1e293b; --card2:#334155; --accent:#22c55e;
+      --blue:#3b82f6; --text:#f1f5f9; --muted:#94a3b8; --danger:#ef4444;
+    }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #1e3a8a, #312e81);
-      color: #fff;
-      padding: 20px;
-      text-align: center;
+      font-family:-apple-system, BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      background:var(--bg); color:var(--text); min-height:100vh;
+      display:flex; flex-direction:column; align-items:center; padding:12px 10px 100px;
     }
-    .card {
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 20px;
-      padding: 40px 50px;
-      max-width: 420px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    header { width:100%; max-width:420px; text-align:center; }
+    h1 { font-size:1.4rem; margin-bottom:16px; letter-spacing:-0.3px; }
+
+    #dayPicker { display:flex; gap:10px; }
+    .dayBtn {
+      flex:1; padding:16px 0; font-size:1.2rem; font-weight:800; border-radius:14px;
+      border:none; background:var(--card2); color:var(--muted); cursor:pointer;
     }
-    h1 {
-      font-size: 2.2rem;
-      margin-bottom: 10px;
-      letter-spacing: -0.5px;
+    .dayBtn.selected { background:var(--accent); color:#052e10; }
+    #noneHint { font-size:0.85rem; color:var(--danger); text-align:center; margin-top:12px; }
+
+    .machineCard {
+      background:var(--card); border-radius:16px; padding:12px;
+      display:flex; flex-direction:column; gap:6px; margin-bottom:10px;
     }
-    p {
-      opacity: 0.85;
-      margin-bottom: 20px;
-      font-size: 1.05rem;
+    .mName { font-weight:800; font-size:1.05rem; margin-bottom:2px; }
+
+    .stepperRow { display:flex; align-items:center; justify-content:space-between; }
+    .stepperLabel { font-size:0.88rem; color:var(--muted); }
+    .stepper { display:flex; align-items:center; gap:8px; }
+    .stBtn {
+      width:44px; height:44px; border-radius:14px; border:none; font-size:1.4rem;
+      font-weight:900; cursor:pointer; line-height:1; touch-action:manipulation;
     }
-    .badge {
-      display: inline-block;
-      background: #10b981;
-      color: #fff;
-      padding: 8px 18px;
-      border-radius: 50px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      letter-spacing: 0.5px;
+    .stBtn.minus { background:var(--card2); color:var(--blue); }
+    .stBtn.plus  { background:var(--accent); color:#052e10; }
+    .stVal { min-width:58px; text-align:center; font-size:1.35rem; font-weight:800; color:var(--accent); }
+    .stUnit { font-size:0.8rem; color:var(--muted); margin-left:1px; }
+
+    .cardioCard {
+      background:linear-gradient(135deg,#312e81,#1e3a8a); border-radius:16px;
+      padding:14px; margin-top:4px;
     }
-    small {
-      display: block;
-      margin-top: 24px;
-      opacity: 0.5;
+    .cardioTitle { font-size:1.05rem; font-weight:800; margin-bottom:8px; }
+
+    #actionBar {
+      position:fixed; left:0; right:0; bottom:0; max-width:420px; margin:0 auto;
+      display:flex; gap:10px; background:var(--bg); padding:12px 10px;
+      border-top:1px solid rgba(255,255,255,0.08);
     }
+    .primaryBtn {
+      flex:1; padding:18px 0; font-size:1.15rem; font-weight:800; border:none;
+      border-radius:14px; background:var(--accent); color:#052e10; cursor:pointer;
+    }
+    .resetBtn {
+      width:58px; height:58px; border-radius:14px; border:none; background:var(--danger);
+      color:#fff; font-size:1.3rem; font-weight:800; cursor:pointer;
+    }
+
+    #toast {
+      position:fixed; left:50%; bottom:102px; transform:translateX(-50%);
+      background:#052e10; color:#fff; padding:12px 24px; border-radius:50px;
+      font-weight:700; opacity:0; transition:opacity .25s; pointer-events:none; z-index:60;
+    }
+
+    .overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.65); display:none;
+      align-items:center; justify-content:center; z-index:100; padding:24px;
+    }
+    .modalBox {
+      background:var(--card); border-radius:16px; padding:24px; width:100%; max-width:340px;
+      text-align:center;
+    }
+    .modalBox h2 { font-size:1.15rem; margin-bottom:10px; }
+    .modalBox p { font-size:0.9rem; color:var(--muted); margin-bottom:4px; }
+    .modalActions { display:flex; gap:10px; margin-top:16px; }
+    .btnM { flex:1; padding:14px 0; border-radius:12px; border:none; font-size:1rem; font-weight:800; cursor:pointer; }
+    .btnM.cancel { background:var(--card2); color:var(--text); }
+    .btnM.confirm { background:var(--danger); color:#fff; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Hello World 👋</h1>
-    <p>Das ist meine erste Seite auf <strong>GitHub Pages</strong>.<br>Der Startschuss für meinen Fitness-Tracker! 💪</p>
-    <span class="badge">✓ Live on GitHub Pages</span>
-    <small>Weingut Kimich · Deidesheim · 2026</small>
+  <header>
+    <h1>🏋️ Fitness-Tracker</h1>
+    <div id="dayPicker">
+      <button class="dayBtn" data-day="A">Tag A</button>
+      <button class="dayBtn" data-day="B">Tag B</button>
+    </div>
+    <div id="noneHint" style="display:none">👆 Bitte zuerst einen Tag wählen</div>
+  </header>
+
+  <div id="dayWrap"></div>
+
+  <div id="actionBar">
+    <button id="primaryBtn" class="primaryBtn">💾 Speichern</button>
+    <button id="resetBtn" class="resetBtn">⟲</button>
   </div>
+
+  <div id="toast"></div>
+
+  <div id="resetOverlay" class="overlay">
+    <div class="modalBox">
+      <h2>⚠️ Alles zurücksetzen?</h2>
+      <p>Das Löscht ALLE gespeicherten Trainingsdaten (beide Tage). Nicht rückgängig machbar.</p>
+      <div class="modalActions">
+        <button id="cancelReset" class="btnM cancel">Abbrechen</button>
+        <button id="confirmReset" class="btnM confirm">Alles löschen</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var MACHINES = ["Gerät 1","Gerät 2","Gerät 3","Gerät 4","Gerät 5","Gerät 6"];
+  var KEY = "fitnessTrackerV1";
+  var activeDay = null;
+
+  function defaultState(){
+    var A = { machines:{}, cardio:{dur:0, stufe:1} };
+    var B = { machines:{}, cardio:{dur:0, stufe:1} };
+    for (var i=1; i<=MACHINES.length; i++){
+      A.machines["m"+i] = {kg:0, reps:0};
+      B.machines["m"+i] = {kg:0, reps:0};
+    }
+    return {A:A, B:B};
+  }
+  function load(){
+    try {
+      var raw = localStorage.getItem(KEY);
+      if(!raw) return defaultState();
+      var d = JSON.parse(raw);
+      if(!d || !d.A || !d.B || !d.A.machines || !d.B.machines) return defaultState();
+      return d;
+    } catch(e){ return defaultState(); }
+  }
+  var store = load();
+  function save(){ localStorage.setItem(KEY, JSON.stringify(store)); }
+
+  function fmt(v){
+    v = Math.round(v*100)/100;
+    var s = String(v);
+    if (s.indexOf('.') === -1) return s;
+    s = v.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
+    return s;
+  }
+
+  /* ---------- Helpers to build a stepper ---------- */
+  function stepperRow(label, val, unit, onClick){
+    var row = document.createElement('div');
+    row.className = 'stepperRow';
+    var lbl = document.createElement('span');
+    lbl.className = 'stepperLabel'; lbl.textContent = label;
+
+    var sp = document.createElement('div');
+    sp.className = 'stepper';
+    sp.innerHTML =
+      '<button class="stBtn minus"></button>' +
+      '<span class="stVal"></span>' +
+      (unit ? '<span class="stUnit"></span>' : '') +
+      '<button class="stBtn plus"></button>';
+
+    sp.querySelector('.stVal').textContent = fmt(val);
+    if (unit) sp.querySelector('.stUnit').textContent = unit;
+    sp.querySelector('.stBtn.minus').onclick = function(){ onClick(false); };
+    sp.querySelector('.stBtn.plus').onclick = function(){ onClick(true); };
+
+    row.appendChild(lbl); row.appendChild(sp);
+    return row;
+  }
+
+  function render(){
+    var wrap = document.getElementById('dayWrap');
+    wrap.innerHTML = '';
+    if(!activeDay){
+      document.getElementById('noneHint').style.display = '';
+      return;
+    }
+    var day = store[activeDay];
+
+    MACHINES.forEach(function(name, idx){
+      var m = day.machines["m"+(idx+1)];
+      var card = document.createElement('div');
+      card.className = 'machineCard';
+      var title = document.createElement('div');
+      title.className = 'mName';
+      title.textContent = name;
+      card.appendChild(title);
+      card.appendChild(stepperRow('Gewicht', m.kg, 'kg', function(plus){
+        stepMachine(idx,'kg',plus);
+      }));
+      card.appendChild(stepperRow('Wiederh.', m.reps, '', function(plus){
+        stepMachine(idx,'reps',plus);
+      }));
+      wrap.appendChild(card);
+    });
+
+    // Cardio
+    var c = day.cardio;
+    var cc = document.createElement('div');
+    cc.className = 'cardioCard';
+    var ct = document.createElement('div');
+    ct.className = 'cardioTitle';
+    ct.textContent = '🏃 Cardio';
+    cc.appendChild(ct);
+    cc.appendChild(stepperRow('Dauer (min)', c.dur, 'min', function(plus){
+      stepCardio('dur', plus);
+    }));
+    cc.appendChild(stepperRow('Stufe (1-20)', c.stufe, '', function(plus){
+      stepCardio('stufe', plus);
+    }));
+    wrap.appendChild(cc);
+  }
+
+  function stepMachine(idx, field, plus){
+    var m = store[activeDay].machines["m"+(idx+1)];
+    var step = (field==='kg') ? 2.5 : 1;
+    var next = plus ? m[field]+step : Math.max(0, m[field]-step);
+    m[field] = Math.round(next*100)/100;
+    save(); render();
+  }
+
+  function stepCardio(field, plus){
+    var c = store[activeDay].cardio;
+    if(field === 'dur'){
+      c.dur = plus ? c.dur+5 : Math.max(0, c.dur-5);
+    } else {
+      c.stufe = plus ? c.stufe+1 : Math.max(1, c.stufe-1);
+      if (c.stufe > 20) c.stufe = 20;
+    }
+    save(); render();
+  }
+
+  /* ---------- Day picker ---------- */
+  var picker = document.getElementById('dayPicker');
+  var dayBtns = Array.prototype.slice.call(picker.querySelectorAll('.dayBtn'));
+  dayBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      activeDay = btn.getAttribute('data-day');
+      dayBtns.forEach(function(b){ b.classList.toggle('selected', b===btn); });
+      document.getElementById('noneHint').style.display='none';
+      render();
+    });
+  });
+
+  /* ---------- Save ---------- */
+  document.getElementById('primaryBtn').addEventListener('click', function(){
+    if(!activeDay){ flash('👆 Bitte Tag wählen'); return; }
+    save();
+    flash('✓ Gespeichert');
+  });
+
+  /* ---------- Reset modal ---------- */
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    document.getElementById('resetOverlay').style.display='flex';
+  });
+  document.getElementById('cancelReset').addEventListener('click', function(){
+    document.getElementById('resetOverlay').style.display='none';
+  });
+  document.getElementById('confirmReset').addEventListener('click', function(){
+    localStorage.removeItem(KEY);
+    store = defaultState();
+    save();
+    document.getElementById('resetOverlay').style.display='none';
+    render();
+    flash('⟲ Alles zurückgesetzt');
+  });
+
+  function flash(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.opacity = '1';
+    setTimeout(function(){ t.style.opacity='0'; }, 1800);
+  }
+
+  render();
+})();
+</script>
 </body>
 </html>
