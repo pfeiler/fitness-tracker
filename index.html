@@ -224,6 +224,33 @@
     opacity:1;
     transform:translateX(-50%) translateY(0);
   }
+  .device-history{
+    margin-top:10px;
+    padding-top:8px;
+    border-top:1px dashed var(--border);
+    font-size:.78rem;
+    color:var(--muted);
+    line-height:1.5;
+  }
+  .device-history .hist-label{
+    font-weight:600;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    font-size:.68rem;
+    margin-right:4px;
+  }
+  .device-history .hist-empty{
+    color:var(--muted);
+    opacity:.7;
+  }
+  .device-history .hist-line{
+    color:var(--text);
+  }
+  .device-history .hist-line .hist-date{
+    color:var(--muted);
+    font-weight:600;
+  }
   footer{
     text-align:center;
     color:var(--muted);
@@ -300,7 +327,7 @@
   function emptyDay(){
     var devices = [];
     for (var i = 0; i < DEVICE_COUNT; i++){
-      devices.push({ gewicht: 0, wiederholungen: 0 });
+      devices.push({ gewicht: 0, wiederholungen: 0, history: [] });
     }
     return {
       devices: devices,
@@ -332,9 +359,12 @@
               var src = d.devices[i];
               if (src && typeof src === "object") {
                 var g = Number(src.gewicht);
-                var w = Number(src.wiederholungen);
-                result[day].devices[i].gewicht = isFinite(g) && g >= 0 ? g : 0;
-                result[day].devices[i].wiederholungen = isFinite(w) && w >= 0 ? Math.round(w) : 0;
+                              var w = Number(src.wiederholungen);
+                              result[day].devices[i].gewicht = isFinite(g) && g >= 0 ? g : 0;
+                              result[day].devices[i].wiederholungen = isFinite(w) && w >= 0 ? Math.round(w) : 0;
+                              if (Array.isArray(src.history)) {
+                                result[day].devices[i].history = src.history.slice(0, 3);
+                              }
               }
             }
           }
@@ -401,6 +431,7 @@
         +     '<button class="step-btn" type="button" data-action="inc" data-device="' + idx + '" data-field="wiederholungen">+</button>'
         +   '</div>'
         + '</div>'
+        + '<div class="device-history" id="deviceHistory' + idx + '"></div>'
         + '</div>';
     }
     return html;
@@ -414,6 +445,7 @@
       var wEl = $("deviceWiederholungenValue" + i);
       if (gEl) gEl.textContent = formatKg(day.devices[i].gewicht);
       if (wEl) wEl.textContent = String(day.devices[i].wiederholungen);
+      renderHistory(day, i);
     }
     var cd = $("cardioDauerValue");
     var cs = $("cardioStufeValue");
@@ -427,6 +459,32 @@
     return n.toFixed(1);
   }
 
+  var WEEKDAYS = ["So.","Mo.","Di.","Mi.","Do.","Fr.","Sa."];
+  function formatDate(d){
+    var dd = ("0" + d.getDate()).slice(-2);
+    var mm = ("0" + (d.getMonth() + 1)).slice(-2);
+    var dow = WEEKDAYS[d.getDay()];
+    return dow + " " + dd + "." + mm + ".";
+  }
+
+  function renderHistory(day, idx){
+    var el = $("deviceHistory" + idx);
+    if (!el) return;
+    var hist = day.devices[idx].history;
+    if (!hist || hist.length === 0){
+      el.innerHTML = '<span class="hist-label">Letzte Werte</span><span class="hist-empty"> — noch keine</span>';
+      return;
+    }
+    var html = '<span class="hist-label">Letzte Werte</span>';
+    // newest first
+    for (var h = hist.length - 1; h >= 0; h--){
+      var e = hist[h];
+      html += '<div class="hist-line"><span class="hist-date">' + e.date + '</span> ' +
+        formatKg(e.gewicht) + ' kg / ' + e.wiederholungen + ' Wdh</div>';
+    }
+    el.innerHTML = html;
+  }
+
   function selectDay(day){
     currentDay = day;
     var btnA = $("btnDayA");
@@ -435,6 +493,16 @@
     if (btnB) btnB.classList.toggle("active", day === "B");
     var main = $("trackerMain");
     if (main) main.style.display = "block";
+    // prefill current values from the last history entry
+    var dayData = state[day];
+    for (var i = 0; i < DEVICE_COUNT; i++){
+      var hist = dayData.devices[i].history;
+      if (hist && hist.length > 0){
+        var last = hist[hist.length - 1];
+        dayData.devices[i].gewicht = last.gewicht;
+        dayData.devices[i].wiederholungen = last.wiederholungen;
+      }
+    }
     renderDay();
   }
 
@@ -471,7 +539,20 @@
   }
 
   function handleSave(){
+    if (!currentDay) return;
+    var dayData = state[currentDay];
+    var dateStr = formatDate(new Date());
+    for (var i = 0; i < DEVICE_COUNT; i++){
+      var dev = dayData.devices[i];
+      dev.history.push({
+        date: dateStr,
+        gewicht: dev.gewicht,
+        wiederholungen: dev.wiederholungen
+      });
+      if (dev.history.length > 3) dev.history = dev.history.slice(dev.history.length - 3);
+    }
     var ok = safeSave(state);
+    renderDay();
     showToast(ok ? "Gespeichert ✓" : "Speichern fehlgeschlagen");
   }
 
