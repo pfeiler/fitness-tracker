@@ -1,286 +1,557 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Fitness-Tracker</title>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    :root {
-      --bg:#0f172a; --card:#1e293b; --card2:#334155; --accent:#22c55e;
-      --blue:#3b82f6; --text:#f1f5f9; --muted:#94a3b8; --danger:#ef4444;
-    }
-    body {
-      font-family:-apple-system, BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-      background:var(--bg); color:var(--text); min-height:100vh;
-      display:flex; flex-direction:column; align-items:center; padding:12px 10px 100px;
-    }
-    header { width:100%; max-width:420px; text-align:center; }
-    h1 { font-size:1.4rem; margin-bottom:16px; letter-spacing:-0.3px; }
-
-    #dayPicker { display:flex; gap:10px; }
-    .dayBtn {
-      flex:1; padding:16px 0; font-size:1.2rem; font-weight:800; border-radius:14px;
-      border:none; background:var(--card2); color:var(--muted); cursor:pointer;
-    }
-    .dayBtn.selected { background:var(--accent); color:#052e10; }
-    #noneHint { font-size:0.85rem; color:var(--danger); text-align:center; margin-top:12px; }
-
-    .machineCard {
-      background:var(--card); border-radius:16px; padding:12px;
-      display:flex; flex-direction:column; gap:6px; margin-bottom:10px;
-    }
-    .mName { font-weight:800; font-size:1.05rem; margin-bottom:2px; }
-
-    .stepperRow { display:flex; align-items:center; justify-content:space-between; }
-    .stepperLabel { font-size:0.88rem; color:var(--muted); }
-    .stepper { display:flex; align-items:center; gap:8px; }
-    .stBtn {
-      width:44px; height:44px; border-radius:14px; border:none; font-size:1.4rem;
-      font-weight:900; cursor:pointer; line-height:1; touch-action:manipulation;
-    }
-    .stBtn.minus { background:var(--card2); color:var(--blue); }
-    .stBtn.plus  { background:var(--accent); color:#052e10; }
-    .stVal { min-width:58px; text-align:center; font-size:1.35rem; font-weight:800; color:var(--accent); }
-    .stUnit { font-size:0.8rem; color:var(--muted); margin-left:1px; }
-
-    .cardioCard {
-      background:linear-gradient(135deg,#312e81,#1e3a8a); border-radius:16px;
-      padding:14px; margin-top:4px;
-    }
-    .cardioTitle { font-size:1.05rem; font-weight:800; margin-bottom:8px; }
-
-    #actionBar {
-      position:fixed; left:0; right:0; bottom:0; max-width:420px; margin:0 auto;
-      display:flex; gap:10px; background:var(--bg); padding:12px 10px;
-      border-top:1px solid rgba(255,255,255,0.08);
-    }
-    .primaryBtn {
-      flex:1; padding:18px 0; font-size:1.15rem; font-weight:800; border:none;
-      border-radius:14px; background:var(--accent); color:#052e10; cursor:pointer;
-    }
-    .resetBtn {
-      width:58px; height:58px; border-radius:14px; border:none; background:var(--danger);
-      color:#fff; font-size:1.3rem; font-weight:800; cursor:pointer;
-    }
-
-    #toast {
-      position:fixed; left:50%; bottom:102px; transform:translateX(-50%);
-      background:#052e10; color:#fff; padding:12px 24px; border-radius:50px;
-      font-weight:700; opacity:0; transition:opacity .25s; pointer-events:none; z-index:60;
-    }
-
-    .overlay {
-      position:fixed; inset:0; background:rgba(0,0,0,0.65); display:none;
-      align-items:center; justify-content:center; z-index:100; padding:24px;
-    }
-    .modalBox {
-      background:var(--card); border-radius:16px; padding:24px; width:100%; max-width:340px;
-      text-align:center;
-    }
-    .modalBox h2 { font-size:1.15rem; margin-bottom:10px; }
-    .modalBox p { font-size:0.9rem; color:var(--muted); margin-bottom:4px; }
-    .modalActions { display:flex; gap:10px; margin-top:16px; }
-    .btnM { flex:1; padding:14px 0; border-radius:12px; border:none; font-size:1rem; font-weight:800; cursor:pointer; }
-    .btnM.cancel { background:var(--card2); color:var(--text); }
-    .btnM.confirm { background:var(--danger); color:#fff; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Fitness Tracker</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --card:#1a1d24;
+    --card2:#20242e;
+    --accent:#4f8cff;
+    --accent2:#3aa76d;
+    --danger:#e5484d;
+    --text:#e8eaf0;
+    --muted:#8b90a0;
+    --border:#2a2e3a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    padding-bottom:40px;
+    user-select:none;
+  }
+  header{
+    padding:20px 16px 8px;
+    text-align:center;
+  }
+  header h1{
+    margin:0;
+    font-size:1.4rem;
+    letter-spacing:.5px;
+  }
+  .day-select{
+    display:flex;
+    gap:10px;
+    padding:12px 16px;
+    max-width:480px;
+    margin:0 auto;
+  }
+  .day-btn{
+    flex:1;
+    padding:14px 8px;
+    min-height:48px;
+    border-radius:12px;
+    border:2px solid var(--border);
+    background:var(--card);
+    color:var(--text);
+    font-size:1rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .day-btn.active{
+    border-color:var(--accent);
+    background:linear-gradient(135deg,var(--accent),#2f6fe0);
+    color:#fff;
+  }
+  main{
+    max-width:480px;
+    margin:0 auto;
+    padding:0 16px;
+  }
+  .section-title{
+    margin:18px 4px 8px;
+    font-size:.85rem;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--muted);
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px;
+    margin-bottom:12px;
+  }
+  .card-title{
+    font-weight:600;
+    font-size:1.05rem;
+    margin-bottom:10px;
+  }
+  .stat-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:6px 0;
+  }
+  .stat-label{
+    font-size:.85rem;
+    color:var(--muted);
+    min-width:90px;
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .step-btn{
+    width:44px;
+    height:44px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--card2);
+    color:var(--text);
+    font-size:1.3rem;
+    font-weight:700;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+  }
+  .step-btn:active{
+    background:var(--accent);
+    color:#fff;
+  }
+  .step-value{
+    min-width:64px;
+    text-align:center;
+    font-size:1.15rem;
+    font-weight:700;
+  }
+  .actions{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-top:22px;
+  }
+  .btn-primary{
+    min-height:52px;
+    border-radius:14px;
+    border:none;
+    background:linear-gradient(135deg,var(--accent2),#2c8358);
+    color:#fff;
+    font-size:1.1rem;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn-danger{
+    min-height:52px;
+    border-radius:14px;
+    border:1px solid var(--danger);
+    background:transparent;
+    color:var(--danger);
+    font-size:1rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:100;
+  }
+  .modal-overlay.show{
+    display:flex;
+  }
+  .modal-box{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:20px;
+    max-width:360px;
+    width:100%;
+  }
+  .modal-box h2{
+    margin:0 0 10px;
+    font-size:1.1rem;
+  }
+  .modal-box p{
+    color:var(--muted);
+    font-size:.9rem;
+    margin:0 0 18px;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+  }
+  .modal-actions button{
+    flex:1;
+    min-height:48px;
+    border-radius:12px;
+    font-size:.95rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .modal-cancel{
+    border:1px solid var(--border);
+    background:var(--card2);
+    color:var(--text);
+  }
+  .modal-confirm{
+    border:none;
+    background:var(--danger);
+    color:#fff;
+  }
+  .toast{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--card2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:12px 20px;
+    border-radius:12px;
+    font-size:.9rem;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    z-index:200;
+    max-width:90%;
+    text-align:center;
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:.75rem;
+    padding:20px 0 6px;
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1>🏋️ Fitness-Tracker</h1>
-    <div id="dayPicker">
-      <button class="dayBtn" data-day="A">Tag A</button>
-      <button class="dayBtn" data-day="B">Tag B</button>
+
+<header>
+  <h1>💪 Fitness Tracker</h1>
+</header>
+
+<div class="day-select">
+  <button class="day-btn" id="btnDayA" type="button">Tag A</button>
+  <button class="day-btn" id="btnDayB" type="button">Tag B</button>
+</div>
+
+<main id="trackerMain" style="display:none;">
+  <div class="section-title">Geräte</div>
+  <div id="devicesContainer"></div>
+
+  <div class="section-title">Cardio</div>
+  <div class="card">
+    <div class="card-title">Cardio</div>
+    <div class="stat-row">
+      <span class="stat-label">Dauer (min)</span>
+      <div class="stepper">
+        <button class="step-btn" type="button" data-action="dec" data-target="cardioDauer">−</button>
+        <span class="step-value" id="cardioDauerValue">0</span>
+        <button class="step-btn" type="button" data-action="inc" data-target="cardioDauer">+</button>
+      </div>
     </div>
-    <div id="noneHint" style="display:none">👆 Bitte zuerst einen Tag wählen</div>
-  </header>
-
-  <div id="dayWrap"></div>
-
-  <div id="actionBar">
-    <button id="primaryBtn" class="primaryBtn">💾 Speichern</button>
-    <button id="resetBtn" class="resetBtn">⟲</button>
-  </div>
-
-  <div id="toast"></div>
-
-  <div id="resetOverlay" class="overlay">
-    <div class="modalBox">
-      <h2>⚠️ Alles zurücksetzen?</h2>
-      <p>Das Löscht ALLE gespeicherten Trainingsdaten (beide Tage). Nicht rückgängig machbar.</p>
-      <div class="modalActions">
-        <button id="cancelReset" class="btnM cancel">Abbrechen</button>
-        <button id="confirmReset" class="btnM confirm">Alles löschen</button>
+    <div class="stat-row">
+      <span class="stat-label">Stufe</span>
+      <div class="stepper">
+        <button class="step-btn" type="button" data-action="dec" data-target="cardioStufe">−</button>
+        <span class="step-value" id="cardioStufeValue">1</span>
+        <button class="step-btn" type="button" data-action="inc" data-target="cardioStufe">+</button>
       </div>
     </div>
   </div>
 
+  <div class="actions">
+    <button class="btn-primary" id="btnSave" type="button">Speichern</button>
+    <button class="btn-danger" id="btnReset" type="button">Alle Daten zurücksetzen</button>
+  </div>
+</main>
+
+<footer>Daten werden lokal im Browser gespeichert.</footer>
+
+<div class="modal-overlay" id="resetModal">
+  <div class="modal-box">
+    <h2>Wirklich alles löschen?</h2>
+    <p>Alle gespeicherten Werte für Tag A und Tag B werden dauerhaft entfernt. Dies kann nicht rückgängig gemacht werden.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="btnCancelReset" type="button">Abbrechen</button>
+      <button class="modal-confirm" id="btnConfirmReset" type="button">Alles löschen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
 (function(){
-  var MACHINES = ["Gerät 1","Gerät 2","Gerät 3","Gerät 4","Gerät 5","Gerät 6"];
-  var KEY = "fitnessTrackerV1";
-  var activeDay = null;
+  "use strict";
 
-  function defaultState(){
-    var A = { machines:{}, cardio:{dur:0, stufe:1} };
-    var B = { machines:{}, cardio:{dur:0, stufe:1} };
-    for (var i=1; i<=MACHINES.length; i++){
-      A.machines["m"+i] = {kg:0, reps:0};
-      B.machines["m"+i] = {kg:0, reps:0};
+  var STORAGE_KEY = "fitnessTrackerData_v1";
+  var DEVICE_COUNT = 6;
+  var currentDay = null; // "A" or "B"
+
+  function emptyDay(){
+    var devices = [];
+    for (var i = 0; i < DEVICE_COUNT; i++){
+      devices.push({ gewicht: 0, wiederholungen: 0 });
     }
-    return {A:A, B:B};
+    return {
+      devices: devices,
+      cardio: { dauer: 0, stufe: 1 }
+    };
   }
-  function load(){
+
+  function defaultData(){
+    return { A: emptyDay(), B: emptyDay() };
+  }
+
+  function safeLoad(){
+    var raw = null;
     try {
-      var raw = localStorage.getItem(KEY);
-      if(!raw) return defaultState();
-      var d = JSON.parse(raw);
-      if(!d || !d.A || !d.B || !d.A.machines || !d.B.machines) return defaultState();
-      return d;
-    } catch(e){ return defaultState(); }
-  }
-  var store = load();
-  function save(){ localStorage.setItem(KEY, JSON.stringify(store)); }
-
-  function fmt(v){
-    v = Math.round(v*100)/100;
-    var s = String(v);
-    if (s.indexOf('.') === -1) return s;
-    s = v.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
-    return s;
-  }
-
-  /* ---------- Helpers to build a stepper ---------- */
-  function stepperRow(label, val, unit, onClick){
-    var row = document.createElement('div');
-    row.className = 'stepperRow';
-    var lbl = document.createElement('span');
-    lbl.className = 'stepperLabel'; lbl.textContent = label;
-
-    var sp = document.createElement('div');
-    sp.className = 'stepper';
-    sp.innerHTML =
-      '<button class="stBtn minus"></button>' +
-      '<span class="stVal"></span>' +
-      (unit ? '<span class="stUnit"></span>' : '') +
-      '<button class="stBtn plus"></button>';
-
-    sp.querySelector('.stVal').textContent = fmt(val);
-    if (unit) sp.querySelector('.stUnit').textContent = unit;
-    sp.querySelector('.stBtn.minus').onclick = function(){ onClick(false); };
-    sp.querySelector('.stBtn.plus').onclick = function(){ onClick(true); };
-
-    row.appendChild(lbl); row.appendChild(sp);
-    return row;
-  }
-
-  function render(){
-    var wrap = document.getElementById('dayWrap');
-    wrap.innerHTML = '';
-    if(!activeDay){
-      document.getElementById('noneHint').style.display = '';
-      return;
+      raw = localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      return defaultData();
     }
-    var day = store[activeDay];
-
-    MACHINES.forEach(function(name, idx){
-      var m = day.machines["m"+(idx+1)];
-      var card = document.createElement('div');
-      card.className = 'machineCard';
-      var title = document.createElement('div');
-      title.className = 'mName';
-      title.textContent = name;
-      card.appendChild(title);
-      card.appendChild(stepperRow('Gewicht', m.kg, 'kg', function(plus){
-        stepMachine(idx,'kg',plus);
-      }));
-      card.appendChild(stepperRow('Wiederh.', m.reps, '', function(plus){
-        stepMachine(idx,'reps',plus);
-      }));
-      wrap.appendChild(card);
-    });
-
-    // Cardio
-    var c = day.cardio;
-    var cc = document.createElement('div');
-    cc.className = 'cardioCard';
-    var ct = document.createElement('div');
-    ct.className = 'cardioTitle';
-    ct.textContent = '🏃 Cardio';
-    cc.appendChild(ct);
-    cc.appendChild(stepperRow('Dauer (min)', c.dur, 'min', function(plus){
-      stepCardio('dur', plus);
-    }));
-    cc.appendChild(stepperRow('Stufe (1-20)', c.stufe, '', function(plus){
-      stepCardio('stufe', plus);
-    }));
-    wrap.appendChild(cc);
-  }
-
-  function stepMachine(idx, field, plus){
-    var m = store[activeDay].machines["m"+(idx+1)];
-    var step = (field==='kg') ? 2.5 : 1;
-    var next = plus ? m[field]+step : Math.max(0, m[field]-step);
-    m[field] = Math.round(next*100)/100;
-    save(); render();
-  }
-
-  function stepCardio(field, plus){
-    var c = store[activeDay].cardio;
-    if(field === 'dur'){
-      c.dur = plus ? c.dur+5 : Math.max(0, c.dur-5);
-    } else {
-      c.stufe = plus ? c.stufe+1 : Math.max(1, c.stufe-1);
-      if (c.stufe > 20) c.stufe = 20;
+    if (!raw) return defaultData();
+    try {
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return defaultData();
+      var result = defaultData();
+      ["A", "B"].forEach(function(day){
+        if (parsed[day] && typeof parsed[day] === "object") {
+          var d = parsed[day];
+          if (Array.isArray(d.devices)) {
+            for (var i = 0; i < DEVICE_COUNT; i++) {
+              var src = d.devices[i];
+              if (src && typeof src === "object") {
+                var g = Number(src.gewicht);
+                var w = Number(src.wiederholungen);
+                result[day].devices[i].gewicht = isFinite(g) && g >= 0 ? g : 0;
+                result[day].devices[i].wiederholungen = isFinite(w) && w >= 0 ? Math.round(w) : 0;
+              }
+            }
+          }
+          if (d.cardio && typeof d.cardio === "object") {
+            var dauer = Number(d.cardio.dauer);
+            var stufe = Number(d.cardio.stufe);
+            result[day].cardio.dauer = isFinite(dauer) && dauer >= 0 ? dauer : 0;
+            result[day].cardio.stufe = isFinite(stufe) ? Math.min(20, Math.max(1, Math.round(stufe))) : 1;
+          }
+        }
+      });
+      return result;
+    } catch (e) {
+      return defaultData();
     }
-    save(); render();
   }
 
-  /* ---------- Day picker ---------- */
-  var picker = document.getElementById('dayPicker');
-  var dayBtns = Array.prototype.slice.call(picker.querySelectorAll('.dayBtn'));
-  dayBtns.forEach(function(btn){
-    btn.addEventListener('click', function(){
-      activeDay = btn.getAttribute('data-day');
-      dayBtns.forEach(function(b){ b.classList.toggle('selected', b===btn); });
-      document.getElementById('noneHint').style.display='none';
-      render();
-    });
-  });
+  function safeSave(data){
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 
-  /* ---------- Save ---------- */
-  document.getElementById('primaryBtn').addEventListener('click', function(){
-    if(!activeDay){ flash('👆 Bitte Tag wählen'); return; }
-    save();
-    flash('✓ Gespeichert');
-  });
+  var state = safeLoad();
 
-  /* ---------- Reset modal ---------- */
-  document.getElementById('resetBtn').addEventListener('click', function(){
-    document.getElementById('resetOverlay').style.display='flex';
-  });
-  document.getElementById('cancelReset').addEventListener('click', function(){
-    document.getElementById('resetOverlay').style.display='none';
-  });
-  document.getElementById('confirmReset').addEventListener('click', function(){
-    localStorage.removeItem(KEY);
-    store = defaultState();
-    save();
-    document.getElementById('resetOverlay').style.display='none';
-    render();
-    flash('⟲ Alles zurückgesetzt');
-  });
+  function $(id){
+    return document.getElementById(id);
+  }
 
-  function flash(msg){
-    var t = document.getElementById('toast');
+  function showToast(msg){
+    var t = $("toast");
+    if (!t) return;
     t.textContent = msg;
-    t.style.opacity = '1';
-    setTimeout(function(){ t.style.opacity='0'; }, 1800);
+    t.classList.add("show");
+    window.clearTimeout(showToast._timer);
+    showToast._timer = window.setTimeout(function(){
+      t.classList.remove("show");
+    }, 2200);
   }
 
-  render();
+  function buildDevicesHTML(){
+    var html = "";
+    for (var i = 0; i < DEVICE_COUNT; i++){
+      var idx = i;
+      html += ""
+        + '<div class="card">'
+        + '<div class="card-title">Gerät ' + (idx + 1) + '</div>'
+        + '<div class="stat-row">'
+        +   '<span class="stat-label">Gewicht (kg)</span>'
+        +   '<div class="stepper">'
+        +     '<button class="step-btn" type="button" data-action="dec" data-device="' + idx + '" data-field="gewicht">−</button>'
+        +     '<span class="step-value" id="deviceGewichtValue' + idx + '">0</span>'
+        +     '<button class="step-btn" type="button" data-action="inc" data-device="' + idx + '" data-field="gewicht">+</button>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="stat-row">'
+        +   '<span class="stat-label">Wiederholungen</span>'
+        +   '<div class="stepper">'
+        +     '<button class="step-btn" type="button" data-action="dec" data-device="' + idx + '" data-field="wiederholungen">−</button>'
+        +     '<span class="step-value" id="deviceWiederholungenValue' + idx + '">0</span>'
+        +     '<button class="step-btn" type="button" data-action="inc" data-device="' + idx + '" data-field="wiederholungen">+</button>'
+        +   '</div>'
+        + '</div>'
+        + '</div>';
+    }
+    return html;
+  }
+
+  function renderDay(){
+    if (!currentDay) return;
+    var day = state[currentDay];
+    for (var i = 0; i < DEVICE_COUNT; i++){
+      var gEl = $("deviceGewichtValue" + i);
+      var wEl = $("deviceWiederholungenValue" + i);
+      if (gEl) gEl.textContent = formatKg(day.devices[i].gewicht);
+      if (wEl) wEl.textContent = String(day.devices[i].wiederholungen);
+    }
+    var cd = $("cardioDauerValue");
+    var cs = $("cardioStufeValue");
+    if (cd) cd.textContent = String(day.cardio.dauer);
+    if (cs) cs.textContent = String(day.cardio.stufe);
+  }
+
+  function formatKg(v){
+    var n = Math.round(v * 100) / 100;
+    if (Math.abs(n - Math.round(n)) < 0.001) return String(Math.round(n));
+    return n.toFixed(1);
+  }
+
+  function selectDay(day){
+    currentDay = day;
+    var btnA = $("btnDayA");
+    var btnB = $("btnDayB");
+    if (btnA) btnA.classList.toggle("active", day === "A");
+    if (btnB) btnB.classList.toggle("active", day === "B");
+    var main = $("trackerMain");
+    if (main) main.style.display = "block";
+    renderDay();
+  }
+
+  function adjustDevice(deviceIdx, field, delta){
+    if (!currentDay) return;
+    var dev = state[currentDay].devices[deviceIdx];
+    if (!dev) return;
+    if (field === "gewicht"){
+      var newVal = Math.round((dev.gewicht + delta) * 100) / 100;
+      if (newVal < 0) newVal = 0;
+      dev.gewicht = newVal;
+    } else if (field === "wiederholungen"){
+      var newRep = dev.wiederholungen + delta;
+      if (newRep < 0) newRep = 0;
+      dev.wiederholungen = newRep;
+    }
+    renderDay();
+  }
+
+  function adjustCardio(field, delta){
+    if (!currentDay) return;
+    var cardio = state[currentDay].cardio;
+    if (field === "cardioDauer"){
+      var newDauer = cardio.dauer + delta;
+      if (newDauer < 0) newDauer = 0;
+      cardio.dauer = newDauer;
+    } else if (field === "cardioStufe"){
+      var newStufe = cardio.stufe + delta;
+      if (newStufe < 1) newStufe = 1;
+      if (newStufe > 20) newStufe = 20;
+      cardio.stufe = newStufe;
+    }
+    renderDay();
+  }
+
+  function handleSave(){
+    var ok = safeSave(state);
+    showToast(ok ? "Gespeichert ✓" : "Speichern fehlgeschlagen");
+  }
+
+  function openResetModal(){
+    var m = $("resetModal");
+    if (m) m.classList.add("show");
+  }
+
+  function closeResetModal(){
+    var m = $("resetModal");
+    if (m) m.classList.remove("show");
+  }
+
+  function performReset(){
+    state = defaultData();
+    safeSave(state);
+    if (currentDay) renderDay();
+    closeResetModal();
+    showToast("Alle Daten gelöscht");
+  }
+
+  function init(){
+    var container = $("devicesContainer");
+    if (container) container.innerHTML = buildDevicesHTML();
+
+    var btnA = $("btnDayA");
+    var btnB = $("btnDayB");
+    if (btnA) btnA.addEventListener("click", function(){ selectDay("A"); });
+    if (btnB) btnB.addEventListener("click", function(){ selectDay("B"); });
+
+    var main = $("trackerMain");
+    if (main){
+      main.addEventListener("click", function(ev){
+        var btn = ev.target.closest ? ev.target.closest(".step-btn") : null;
+        if (!btn) return;
+        var action = btn.getAttribute("data-action");
+        var delta = action === "inc" ? 1 : -1;
+        var deviceAttr = btn.getAttribute("data-device");
+        var target = btn.getAttribute("data-target");
+        if (deviceAttr !== null){
+          var field = btn.getAttribute("data-field");
+          var step = field === "gewicht" ? 2.5 : 1;
+          adjustDevice(parseInt(deviceAttr, 10), field, delta * step);
+        } else if (target === "cardioDauer"){
+          adjustCardio("cardioDauer", delta * 5);
+        } else if (target === "cardioStufe"){
+          adjustCardio("cardioStufe", delta * 1);
+        }
+      });
+    }
+
+    var btnSave = $("btnSave");
+    if (btnSave) btnSave.addEventListener("click", handleSave);
+
+    var btnReset = $("btnReset");
+    if (btnReset) btnReset.addEventListener("click", openResetModal);
+
+    var btnCancelReset = $("btnCancelReset");
+    if (btnCancelReset) btnCancelReset.addEventListener("click", closeResetModal);
+
+    var btnConfirmReset = $("btnConfirmReset");
+    if (btnConfirmReset) btnConfirmReset.addEventListener("click", performReset);
+
+    var overlay = $("resetModal");
+    if (overlay){
+      overlay.addEventListener("click", function(ev){
+        if (ev.target === overlay) closeResetModal();
+      });
+    }
+
+    selectDay("A");
+  }
+
+  if (document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();
 </script>
+
 </body>
 </html>
