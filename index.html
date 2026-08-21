@@ -67,10 +67,7 @@
 
   .datefield{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:10px 12px;background:var(--panel);border-radius:10px;}
   .datefield label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;}
-  .datefield input[type="date"]{
-    background:transparent;border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;
-    text-align:right;color-scheme:dark;
-  }
+  .datefield .date-now{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);}
 
   .platebar{display:flex;gap:3px;height:26px;align-items:flex-end;margin-bottom:14px;}
   .plate{flex:1;background:var(--accent-dim);border-radius:2px;min-width:3px;transition:height .2s;}
@@ -378,16 +375,10 @@ function renderCard(ex){
   card.className = 'card';
   const cur = state.current[ex.id];
 
-  // date field (applies to whichever set gets logged next)
+  // date display — heute wird automatisch erfasst, keine Eingabe nötig
   const dfield = document.createElement('div');
   dfield.className = 'datefield';
-  dfield.innerHTML = `<label>Datum</label>`;
-  const dinput = document.createElement('input');
-  dinput.type = 'date';
-  dinput.value = cur.date;
-  dinput.max = todayStr();
-  dinput.onchange = ()=>{ cur.date = dinput.value || todayStr(); render(); };
-  dfield.appendChild(dinput);
+  dfield.innerHTML = `<label>Datum</label><span class="date-now">${formatDateLabel(todayStr())}</span>`;
   card.appendChild(dfield);
 
   if(ex.type==='weight'){
@@ -525,7 +516,7 @@ function renderCard(ex){
 function round25(v){ return Math.round(v*2)/2; }
 
 async function logSet(ex, cur){
-  const entry = { id: Date.now()+'-'+Math.random().toString(36).slice(2,7), exerciseId: ex.id, date: cur.date || todayStr() };
+  const entry = { id: Date.now()+'-'+Math.random().toString(36).slice(2,7), exerciseId: ex.id, date: todayStr() };
   let isPR = false;
   if(ex.type==='weight'){
     const best = bestWeight(ex.id);
