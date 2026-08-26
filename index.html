@@ -138,6 +138,14 @@
   }
   .resetbtn:active{background:var(--record);color:#f5ece9;}
 
+  .transfer-row{display:flex;gap:8px;margin:18px 0;}
+  .transferbtn{
+    flex:1;padding:13px;border-radius:var(--radius);border:1px solid var(--line);
+    background:var(--panel);color:var(--text);font-weight:600;font-size:13px;
+  }
+  .transferbtn:active{background:var(--accent);color:#161410;border-color:var(--accent);}
+  .transfer-note{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.05em;color:var(--text-dim);margin:-10px 0 18px;line-height:1.5;}
+
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
     background:var(--accent);color:#161410;padding:12px 22px;border-radius:30px;font-weight:600;
@@ -240,14 +248,14 @@ Object.values(ARCHIVED_EXERCISES).forEach(ex=>{ if(!ALL_EXERCISES[ex.id]) ALL_EX
 let state = { view: 'train', gym: 'woellstadt', day: 'A', expanded: null, current: {} };
 let data = { entries: [] }; // {id, exerciseId, weight, reps, level, mins, date}
 
-async function loadData(){
+function loadData(){
   try{
-    const res = await window.storage.get(STORAGE_KEY);
-    if(res && res.value) data = JSON.parse(res.value);
-  }catch(e){ /* no data yet */ }
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if(saved){ const d = JSON.parse(saved); if(d && Array.isArray(d.entries)) data = d; }
+  }catch(e){ /* kein Storage bzw. korrupte Daten → leer starten */ }
 }
-async function saveData(){
-  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(data)); }
+function saveData(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
   catch(e){ console.error('Speichern fehlgeschlagen', e); }
 }
 
@@ -556,6 +564,31 @@ function renderHistory(container){
   resetRow.appendChild(resetBtn);
   container.appendChild(resetRow);
 
+  // Backup exportieren / importieren (Geräteübergriff via Datei)
+  const transfer = document.createElement('div');
+  transfer.className = 'transfer-row';
+  const dlBtn = document.createElement('button');
+  dlBtn.className = 'transferbtn';
+  dlBtn.textContent = '⬇ Backup downloaden';
+  dlBtn.onclick = exportData;
+  const imBtn = document.createElement('button');
+  imBtn.className = 'transferbtn';
+  imBtn.textContent = '⬆ Backup importieren';
+  const fileIn = document.createElement('input');
+  fileIn.type = 'file';
+  fileIn.accept = '.json,application/json';
+  fileIn.style.display = 'none';
+  imBtn.onclick = ()=>{ fileIn.click(); };
+  fileIn.onchange = ()=>{ if(fileIn.files && fileIn.files[0]) importData(fileIn.files[0]); fileIn.value=''; };
+  transfer.appendChild(dlBtn);
+  transfer.appendChild(imBtn);
+  transfer.appendChild(fileIn);
+  container.appendChild(transfer);
+  const note = document.createElement('div');
+  note.className = 'transfer-note';
+  note.textContent = 'Download speichert alle Daten als Datei — damit transferierbar auf ein anderes Gerät (z.B. Windows). Import lädt so eine Datei wieder rein (Doppelte werden übersprungen).';
+  container.appendChild(note);
+
   if(!data.entries.length){
     const e = document.createElement('div');
     e.className = 'ov-empty';
@@ -613,6 +646,41 @@ function render(){
     renderExList(content);
   } else {
     renderHistory(content);
+  }
+}
+
+function exportData(){
+  const payload = JSON.stringify({ app:'fitness-tracker', exportedAt:todayStr(), entries:data.entries }, null, 2);
+  const blob = new Blob([payload], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fitness-tracker-backup-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 800);
+  showToast('Backup-Datei erstellt', false);
+}
+
+async function importData(file){
+  try{
+    const parsed = JSON.parse(await file.text());
+    const entries = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.entries) ? parsed.entries : []);
+    if(!entries.length) throw new Error('keine Einträge');
+    const map = new Map(data.entries.map(e=>[e.id,e]));
+    let added = 0;
+    entries.forEach(e=>{ if(e && e.id && !map.has(e.id)){ map.set(e.id,e); added++; } });
+    if(added===0){
+      showToast('Keine neuen Einträge (alles Duplikate)', false);
+      return;
+    }
+    if(!confirm(`Backup enthält ${entries.length} Einträge. ${added} neue werden übernommen, Duplikate übersprungen. Fortfahren?`)) return;
+    data.entries = Array.from(map.values());
+    saveData();
+    render();
+    showToast(`${added} Einträge importiert`, false);
+  }catch(e){
+    showToast('Import fehlgeschlagen: ungültige Datei', false);
   }
 }
 
