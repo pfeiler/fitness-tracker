@@ -154,6 +154,38 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .toast.pr{background:var(--record);color:#f5ece9;}
 
+  /* day progress status bar (train view) */
+  .day-status{
+    display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:12px 14px;
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  }
+  .day-status .ds-ic{font-size:20px;line-height:1;}
+  .day-status .ds-txt{flex:1;font-size:13px;color:var(--text-dim);line-height:1.35;}
+  .day-status .ds-txt b{color:var(--text);}
+  .day-status.done{border-color:var(--good);}
+  .day-status.done .ds-txt{color:var(--good);}
+
+  /* overview group highlight when a day is complete */
+  .ov-group.done{background:var(--panel);border:1px solid var(--good);border-radius:var(--radius);padding:12px;}
+  .ov-group.done .ov-date{color:var(--good);border-bottom-color:var(--good);}
+  .ov-check{
+    display:inline-flex;align-items:center;gap:6px;float:right;margin-top:2px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--good);
+    border:1px solid var(--good);border-radius:20px;padding:3px 10px;text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  .ov-group:not(.done) .ov-check{display:none;}
+
+  /* confetti */
+  .confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:999;}
+  .confetti i{
+    position:absolute;top:-12px;display:block;width:8px;height:12px;border-radius:2px;
+    animation:cf-fall linear forwards;
+  }
+  @keyframes cf-fall{
+    to{transform:translateY(110vh) rotate(720deg);opacity:.2;}
+  }
+
   .empty{color:var(--text-dim);font-size:13px;font-family:'JetBrains Mono',monospace;}
 </style>
 </head>
@@ -526,6 +558,7 @@ function round25(v){ return Math.round(v*2)/2; }
 async function logSet(ex, cur){
   const entry = { id: Date.now()+'-'+Math.random().toString(36).slice(2,7), exerciseId: ex.id, date: todayStr() };
   let isPR = false;
+  const wasComplete = dayProgress(state.gym, state.day, todayStr()).complete;
   if(ex.type==='weight'){
     const best = bestWeight(ex.id);
     isPR = best!==null && cur.weight > best;
@@ -535,8 +568,13 @@ async function logSet(ex, cur){
   }
   data.entries.push(entry);
   await saveData();
-  showToast(isPR ? '🔥 Neuer Rekord gespeichert!' : 'Satz gespeichert', isPR);
+  const nowComplete = dayProgress(state.gym, state.day, todayStr()).complete;
   render();
+  if(nowComplete && !wasComplete){
+    confetti();
+  } else {
+    showToast(isPR ? '🔥 Neuer Rekord gespeichert!' : 'Satz gespeichert', isPR);
+  }
 }
 
 const WEEKDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
@@ -545,6 +583,54 @@ function formatDateLabel(dateStr){
   const dt = new Date(dateStr+'T00:00:00');
   const wd = WEEKDAYS[dt.getDay()];
   return `${wd}, ${d}.${m}.${y}`;
+}
+
+/* ---- TAGES-FORTSCHRITT: Stairmaster 1x + jede Gewichtsübung 3x ---- */
+function dayRequired(gym, day){
+  // Stairmaster (cardio) wird 1x, jede Gewichtsübung 3x geloggt
+  return GYMS[gym].days[day].exercises.map(ex=>({
+    id: ex.id,
+    name: ex.name,
+    type: ex.type,
+    need: ex.type==='cardio' ? 1 : 3
+  }));
+}
+function dayProgress(gym, day, date){
+  const req = dayRequired(gym, day);
+  const counts = {};
+  req.forEach(r=>{ counts[r.id]=0; });
+  data.entries.forEach(e=>{
+    if(e.date===date && counts[e.exerciseId] !== undefined) counts[e.exerciseId]++;
+  });
+  const missing = req.filter(r=> counts[r.id] < r.need);
+  return {
+    total: req.length,
+    doneCount: req.length - missing.length,
+    missing: missing,
+    complete: missing.length===0
+  };
+}
+
+/* Konfetti-Fontäne */
+function confetti(){
+  const wrap = document.createElement('div');
+  wrap.className = 'confetti';
+  const colors = ['#C98A3E','#3aa76d','#4f8cff','#e5484d','#f5b942','#8a5cf5'];
+  const n = 60;
+  for(let i=0;i<n;i++){
+    const c = document.createElement('i');
+    const dur = 1.4 + Math.random()*1.4;
+    c.style.left = Math.random()*100 + '%';
+    c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.width = (6+Math.random()*6)+'px';
+    c.style.height = (10+Math.random()*8)+'px';
+    c.style.animationDuration = dur+'s';
+    c.style.animationDelay = (Math.random()*0.5)+'s';
+    wrap.appendChild(c);
+  }
+  document.body.appendChild(wrap);
+  showToast('🎉 Alles für heute erledigt!', false);
+  setTimeout(()=>{ wrap.remove(); }, 3200);
 }
 
 function renderHistory(container){
@@ -604,12 +690,22 @@ function renderHistory(container){
   const dates = Object.keys(byDate).sort((a,b)=> a<b?1:-1).slice(0,3);
 
   dates.forEach(date=>{
+    // komplett, wenn für dieses Datum Tag A oder Tag B des aktuellen Gyms erfüllt ist
+    const dayKeys = Object.keys(GYMS[state.gym].days);
+    const doneForDate = dayKeys.some(k=> dayProgress(state.gym, k, date).complete);
+
     const group = document.createElement('div');
-    group.className = 'ov-group';
+    group.className = 'ov-group' + (doneForDate ? ' done' : '');
     const h = document.createElement('div');
     h.className = 'ov-date';
     h.textContent = formatDateLabel(date);
     group.appendChild(h);
+    if(doneForDate){
+      const chk = document.createElement('span');
+      chk.className = 'ov-check';
+      chk.textContent = '✓ komplett';
+      group.appendChild(chk);
+    }
 
     const rows = byDate[date].slice().sort((a,b)=> b.id.localeCompare(a.id));
     rows.forEach(e=>{
@@ -643,10 +739,29 @@ function render(){
   if(state.view === 'train'){
     renderGymToggle(content);
     renderDayToggle(content);
+    renderDayStatus(content);
     renderExList(content);
   } else {
     renderHistory(content);
   }
+}
+
+/* Statuszeile: wie viel vom heutigen Training schon erledigt ist */
+function renderDayStatus(container){
+  const p = dayProgress(state.gym, state.day, todayStr());
+  const el = document.createElement('div');
+  el.className = 'day-status' + (p.complete ? ' done' : '');
+  let icon = p.complete ? '✅' : '⏳';
+  let text;
+  if(p.complete){
+    text = 'Fertig! <b>Alle Übungen für ' + GYMS[state.gym].days[state.day].label + ' erledigt.</b>';
+  } else {
+    const missingNames = p.missing.map(m=> m.need>1 ? m.name + ' ×' + m.need : m.name).join(', ');
+    text = '<b>' + p.doneCount + '/' + p.total + '</b> erledigt' +
+      (p.missing.length ? ' — offen: ' + missingNames : '');
+  }
+  el.innerHTML = '<span class="ds-ic">' + icon + '</span><div class="ds-txt">' + text + '</div>';
+  container.appendChild(el);
 }
 
 function exportData(){
